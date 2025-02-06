@@ -72,30 +72,8 @@ Bad Request (400 Bad Request):
     "number": "alphabet",
     "error": true
 }
-Use code with caution.
-Json
-API Specification
-Endpoint: GET /api/classify-number
 
-Parameters:
-
-number (required): An integer to classify.
-
-Returns:
-
-A JSON object containing the number's properties and a fun fact.
-
-The possible combinations for the properties field are:
-
-["armstrong", "odd"] - if the number is both an Armstrong number and odd
-
-["armstrong", "even"] - if the number is an Armstrong number and even
-
-["odd"] - if the number is not an Armstrong number but is odd
-
-["even"] - if the number is not an Armstrong number but is even
-
-Error Handling
+## Error Handling
 The API returns a 400 Bad Request error if the number parameter is missing or is not a valid integer. It also handles errors from the Numbers API gracefully, returning a generic fun fact message if the API is unavailable.
 
 ## Deployment
