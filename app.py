@@ -116,7 +116,7 @@ def page_not_found(e):
     """
     data = {
         "number": "alphabet",
-        "error": True
+        "message": "The requested resource was not found."
     }
     return jsonify(data), 404
 
