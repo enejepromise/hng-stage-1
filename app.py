@@ -13,14 +13,15 @@ import requests
 
 # Initialize the Flask app
 app = Flask(__name__)
-CORS(app)  # Enable Cross-Origin Resource Sharing (CORS)
+CORS(app)  # Enable Cross Origin Resource Sharing (CORS)
 
-# Disable key sorting for Flask's JSON encoder
+# Disable key sorting for Flask's JSON encoder (as requested in requirements)
 app.json.sort_keys = False
 
-
 def is_prime(n):
-    """Check if a number is prime."""
+    """
+    A function to check if a number is prime.
+    """
     if n < 2:
         return False
     for i in range(2, int(n ** 0.5) + 1):
@@ -28,66 +29,74 @@ def is_prime(n):
             return False
     return True
 
-
 def is_perfect(n):
-    """Check if a number is perfect."""
+    """
+    A function to check if a number is perfect.
+    """
     if n < 1:
         return False
     divisors = [i for i in range(1, n) if n % i == 0]
     return sum(divisors) == n
 
-
 def is_armstrong(n):
-    """Check if a number is an Armstrong number."""
+    """
+    A function to check if a number is an Armstrong number.
+    """
     if n < 0:
         return False
     digits = str(n)
     power = len(digits)
     return sum(int(digit) ** power for digit in digits) == n
 
-
 def digit_sum(n):
-    """Calculate the sum of the digits of a number."""
-    return sum(int(digit) for digit in str(abs(n)))
-
+    """
+    A function to calculate the sum of the digits of a number.
+    """
+    return sum(int(digit) for digit in str(n))
 
 @app.route('/api/classify-number', methods=['GET'])
 def classify_number():
     """
     Checks the mathematical properties of a number,
     and returns a JSON response containing the number,
-    its properties, and a fun fact from the Numbers API.
+    its properties, and a fun fact about the number
+    from the Numbers API.
     """
+    # Get the number parameter from the query string
     number = request.args.get('number')
 
     if not number:
-        return jsonify({"error": "Number parameter is required"}), 400
+        return jsonify({"number": "alphabet", "error": True}), 400
 
     try:
-        number = int(number)  # Convert to integer
+        number = int(number)
     except ValueError:
-        return jsonify({"error": "Invalid number"}), 400
+        return jsonify({"number": number, "error": True}), 400
 
-    # Check mathematical properties
+    # Checking the mathematical properties of the number
     prime = is_prime(number)
     perfect = is_perfect(number)
     armstrong = is_armstrong(number)
     sum_digits = digit_sum(number)
     parity = "odd" if number % 2 != 0 else "even"
 
-    properties = ["armstrong"] if armstrong else []
+    # Generate properties list
+    properties = []
+    if armstrong:
+        properties.append("armstrong")
     properties.append(parity)
 
-    # Fetch fun fact from the Numbers API
+    # Fetch the fun fact from the Numbers API using the math endpoint
     api_url = f"http://numbersapi.com/{number}/math?json"
     try:
         response = requests.get(api_url)
-        response.raise_for_status()
-        fun_fact = response.json().get("text", "")
-    except requests.RequestException:
-        fun_fact = "Fun fact could not be retrieved."
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+        fun_fact = data.get("text", "")
+    except Exception as e:
+        fun_fact = f"Could not retrieve fun fact: {str(e)}"
 
-    # Build response
+    # Build the JSON response
     data = {
         "number": number,
         "is_prime": prime,
@@ -96,15 +105,21 @@ def classify_number():
         "digit_sum": sum_digits,
         "fun_fact": fun_fact
     }
-    return jsonify(data), 200
-
+    return jsonify(data), 200  # Return the JSON response with status 200
 
 @app.errorhandler(404)
 def page_not_found(e):
-    """Return an error message in JSON for undefined routes."""
-    return jsonify({"error": "Route not found"}), 404
-
+    """
+    Returns an error message in JSON
+    when the user tries to access
+    a invalid or undefined route.
+    """
+    data = {
+        "number": "alphabet",
+        "error": True
+    }
+    return jsonify(data), 404
 
 if __name__ == "__main__":
     port = int(environ.get("PORT", 5000))  # Default to 5000 if not provided
-    app.run(host="0.0.0.0", port=port, debug=True)  # Listen on all interfaces (0.0.0.0)
+    app.run(host="0.0.0.0", port=port, debug=True)  # Listen on all interfaces (0.0.0.0) and use the specified port
