@@ -64,14 +64,6 @@ This is a simple API that takes a number as input and returns interesting mathem
     "digit_sum": 11,
     "fun_fact": "371 is an Armstrong number because 3^3 + 7^3 + 1^3 = 371"
 }
-Use code with caution.
-Markdown
-Bad Request (400 Bad Request):
-
-{
-    "number": "alphabet",
-    "error": true
-}
 
 ## Error Handling
 The API returns a 400 Bad Request error if the number parameter is missing or is not a valid integer. It also handles errors from the Numbers API gracefully, returning a generic fun fact message if the API is unavailable.
