@@ -6,127 +6,109 @@ even and odd numbers and returns it in Json format.
 It also handles CORS to ensure secured access across web pages
 
 '''
-from flask import Flask, jsonify, request
-import requests
+from flask import Flask, request, jsonify
 import math
+import requests
+import os
 from flask_cors import CORS
-from os import environ
 
-
-#Initializing app
 app = Flask(__name__)
-# Enabling Cross Origin Recourse Sharing
-CORS(app)
+CORS(app)  # Enable CORS for all routes
 
-app.json.sort_keys = False
 
 def is_prime(n):
-    if n < 2:
+    """Check if a number is prime."""
+    if n <= 1:
         return False
-    for i in range(2, int(2, n ** 5)+ 1):
-        if i % 2 == 0:
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
             return False
     return True
 
+
 def is_perfect(n):
-    '''
-    A function that check if a number is perfect
-    '''
-    if n < 1:
+    """Check if a number is perfect."""
+    if n <= 1:
         return False
-    divisors = [i for i in range(1, n) if n % i == 0]
-    return sum(divisors) == n
+    sum_divisors = 1
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            sum_divisors += i
+            if i * i != n:
+                sum_divisors += n // i
+    return sum_divisors == n
+
 
 def is_armstrong(n):
-    if n < 0:
-        return False
-    digits = str(n)
-    power = len(digits)
-    return sum(int(digit)  ** power for digit in digits) == n
+    """Check if a number is an Armstrong number."""
+    num_str = str(n)
+    num_digits = len(num_str)
+    sum_of_powers = sum(int(digit) ** num_digits for digit in num_str)
+    return sum_of_powers == n
 
-def digit_sum(n):
-    '''
-    A function to calculate the sum of the digits of a number.
-    '''
-    return sum(int(digit) for digit in str(abs(n)))
+
+def get_digit_sum(n):
+    """Calculate the sum of the digits of a number."""
+    return sum(int(digit) for digit in str(n))
+
+
+def get_fun_fact(number):
+    """Get a fun fact from the Numbers API."""
+    try:
+        response = requests.get(f"http://numbersapi.com/{number}/math")
+        response.raise_for_status()  
+        return response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching fun fact from Numbers API: {e}")
+        return "Could not retrieve a fun fact at this time."
+
 
 @app.route('/api/classify-number', methods=['GET'])
 def classify_number():
-    '''
-    This checks the mathematical properties of a number,
-    and returns a JSON response containing the number,
-    its properties, and a fun fact about the number
-    from the Numbers API.
-    '''
-    # Getting the number parameter
-    number = request.args.get('number')
-
-    if not number:  
-        data = {
-            "number": "alphabet",
-            "error": True  
-        }
-        return jsonify(data), 400
-
+    """Classify a number and return its properties and a fun fact."""
     try:
-        number = int(number)
+        number = request.args.get('number')
+        if not number:
+            return jsonify({"error": True, "message": "Missing number parameter"}), 400
+
+        number = int(number)  # Convert to integer
+
     except ValueError:
-        return jsonify({
-            "number": "alphabet",
-            "error": True}
-        ), 400
+        return jsonify({"number": request.args.get('number'), "error": True}), 400
 
-    prime = is_prime(number)
-    perfect = is_perfect(number)
-    armstrong = is_armstrong(number)
-    sum_digits = digit_sum(number)
-    parity = "odd" if number % 2 != 0 else "even"
-   
+    is_prime_num = is_prime(number)
+    is_perfect_num = is_perfect(number)
+    is_armstrong_num = is_armstrong(number)
+
     properties = []
-    if armstrong:
+    if is_armstrong_num:
         properties.append("armstrong")
-    properties.append(parity)
+    if number % 2 == 0:
+        if "armstrong" not in properties:
+            properties.append("even")
+        else:
+            properties.append("even")
+    else:
+        if "armstrong" not in properties:
+            properties.append("odd")
+        else:
+            properties.append("odd")
 
-    # Fetch the fun fact from the Numbers API using the math endpoint
-    api_url = f"http://numbersapi.com/{number}/math?json"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        data = response.json()
-        # print(data)
-        fun_fact = data.get("text", "")
-    except Exception as e:
-        fun_fact = f"Could not retrieve fun fact: {str(e)}"
+    digit_sum = get_digit_sum(number)
+    fun_fact = get_fun_fact(number)
 
-    # Build the JSON response
-    data = {
+    response = {
         "number": number,
-        "is_prime": prime,
-        "is_perfect": perfect,
+        "is_prime": is_prime_num,
+        "is_perfect": is_perfect_num,
         "properties": properties,
-        "digit_sum": sum_digits,
+        "digit_sum": digit_sum,
         "fun_fact": fun_fact
     }
-    return jsonify(data), 200  
 
-# Errors handling and redirections
-@app.errorhandler(404)
-def page_not_found(e):
-    '''
-    Returns an error message in JSON
-    when the user tries to access
-    a invalid or undefined route.
-    '''
-    # return redirect('/')
-    data = {
-        "number": "alphabet",
-        "error": True  
-    }
-    return jsonify(data), 404
+    return jsonify(response), 200
 
 
-
-
-if __name__ == "__main__":
-    port = int(environ.get("PORT", 5000))   
-    app.run(host="0.0.0.0", port=port, debug=True) 
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))  
+    app.run(debug=True, host='0.0.0.0', port=port) 
