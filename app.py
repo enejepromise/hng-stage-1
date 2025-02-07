@@ -84,7 +84,6 @@ def classify_number():
         return jsonify({
             "number": number,
             "error": True,
-            "message": "Negative numbers are not allowed for classification."
         }), 400
 
     # Checking the mathematical properties of the number
