@@ -11,6 +11,11 @@ from flask_cors import CORS
 from os import environ
 import requests
 
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from os import environ
+import requests
+
 # Initialize the Flask app
 app = Flask(__name__)
 CORS(app)  # Enable Cross Origin Resource Sharing (CORS)
@@ -65,6 +70,7 @@ def classify_number():
     # Get the number parameter from the query string
     number = request.args.get('number')
 
+    # Validate the number input
     if not number:
         return jsonify({"number": "alphabet", "error": True}), 400
 
@@ -72,6 +78,14 @@ def classify_number():
         number = int(number)
     except ValueError:
         return jsonify({"number": number, "error": True}), 400
+
+    # Handle negative numbers
+    if number < 0:
+        return jsonify({
+            "number": number,
+            "error": True,
+            "message": "Negative numbers are not allowed for classification."
+        }), 400
 
     # Checking the mathematical properties of the number
     prime = is_prime(number)
@@ -112,7 +126,7 @@ def page_not_found(e):
     """
     Returns an error message in JSON
     when the user tries to access
-    a invalid or undefined route.
+    an invalid or undefined route.
     """
     data = {
         "number": "alphabet",
