@@ -1,5 +1,5 @@
 '''
-This a python flask API that takes a number and returns
+This is a python flask API that takes a number and returns
 interesting mathematical properties like
 prime numbers, perfect numbers, Armstrong,
 even and odd numbers and returns it in Json format.
@@ -58,7 +58,6 @@ def digit_sum(n):
     A function to calculate the sum of the digits of a number.
     """
     return sum(int(digit) for digit in str(n))
-
 @app.route('/api/classify-number', methods=['GET'])
 def classify_number():
     """
@@ -79,35 +78,29 @@ def classify_number():
     except ValueError:
         return jsonify({"number": number, "error": True}), 400
 
-    # Handle negative numbers
-    if number < 0:
-        return jsonify({
-            "number": number,
-            "error": True,
-        }), 400
-
-    # Checking the mathematical properties of the number
+    # Initialize common fields
     prime = is_prime(number)
     perfect = is_perfect(number)
-    armstrong = is_armstrong(number)
-    sum_digits = digit_sum(number)
-    parity = "odd" if number % 2 != 0 else "even"
-
+    sum_digits = digit_sum(abs(number))  # Compute digit sum using absolute value
+    parity = "odd" if abs(number) % 2 != 0 else "even"
+    
     # Generate properties list
-    properties = []
-    if armstrong:
-        properties.append("armstrong")
+    properties = ["negative"] if number < 0 else []
     properties.append(parity)
 
-    # Fetch the fun fact from the Numbers API using the math endpoint
-    api_url = f"http://numbersapi.com/{number}/math?json"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        data = response.json()
-        fun_fact = data.get("text", "")
-    except Exception as e:
-        fun_fact = f"Could not retrieve fun fact: {str(e)}"
+    # Handle negative numbers: No fun facts available
+    if number < 0:
+        fun_fact = "Fun facts are only available for non-negative numbers."
+    else:
+        # Fetch the fun fact from the Numbers API using the math endpoint
+        api_url = f"http://numbersapi.com/{number}/math?json"
+        try:
+            response = requests.get(api_url)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            data = response.json()
+            fun_fact = data.get("text", "")
+        except Exception as e:
+            fun_fact = f"Could not retrieve fun fact: {str(e)}"
 
     # Build the JSON response
     data = {
@@ -120,18 +113,6 @@ def classify_number():
     }
     return jsonify(data), 200  # Return the JSON response with status 200
 
-@app.errorhandler(404)
-def page_not_found(e):
-    """
-    Returns an error message in JSON
-    when the user tries to access
-    an invalid or undefined route.
-    """
-    data = {
-        "number": "alphabet",
-        "message": "The requested resource was not found."
-    }
-    return jsonify(data), 404
 
 if __name__ == "__main__":
     port = int(environ.get("PORT", 5000))  # Default to 5000 if not provided
